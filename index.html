@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>لعبة التلوين</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#fff8ec;--card:#fff;--tx:#2b2b2b;--ac:#ff7a1a;--bd:#e6d9c3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1b19;--card:#2a2724;--tx:#f3eee6;--bd:#4a443d}}
+:root[data-theme="dark"]{--bg:#1d1b19;--card:#2a2724;--tx:#f3eee6;--bd:#4a443d}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Tahoma,"Segoe UI",Arial,sans-serif;text-align:center}
+main{max-width:520px;margin:0 auto;padding:14px}
+h1{font-size:26px;margin:8px 0}
+.card{background:var(--card);border:2px solid var(--bd);border-radius:18px;padding:14px;margin:10px 0}
+button,input{font:inherit;border-radius:12px}
+input{padding:10px;border:2px solid var(--bd);width:70%;background:var(--bg);color:var(--tx)}
+.btn{background:var(--ac);color:#fff;border:0;padding:10px 22px;font-weight:bold;cursor:pointer;margin:6px}
+svg{width:100%;max-width:300px;height:auto}
+.r{cursor:pointer;stroke:#333;stroke-width:3}
+.pal{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.sw{width:38px;height:38px;border-radius:50%;border:3px solid var(--bd);cursor:pointer}
+.sw.on{border-color:var(--tx);transform:scale(1.15)}
+.two{display:flex;gap:8px;justify-content:center}.two>div{flex:1}
+table{width:100%;border-collapse:collapse}td{padding:6px;border-bottom:1px solid var(--bd)}
+.ok{color:#2e9d4a}.no{color:#d33}
+small{opacity:.75}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const COL={yellow:["#FFD93B","أصفر"],orange:["#FF9A2E","برتقالي"],red:["#E53935","أحمر"],pink:["#FF8FB1","وردي"],green:["#43A047","أخضر"],blue:["#1E88E5","أزرق"],brown:["#8D5A36","بني"],white:["#FFFFFF","أبيض"],black:["#222222","أسود"],purple:["#8E44AD","بنفسجي"]};
+const E=(x,y,rx,ry)=>`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}"`;
+const P=p=>`<polygon points="${p}"`;
+const eye=(x,y,r=5)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#222" pointer-events="none"/>`;
+const CH=[
+{n:"البطة",p:[["body","الجسم","yellow",E(100,135,60,45)+"/>"],["head","الرأس","yellow",`<circle cx="100" cy="65" r="32"/>`],["beak","المنقار","orange",P("125,65 160,72 125,80")+"/>"],["feet","القدمان","orange",`<rect x="76" y="176" width="26" height="9"/><rect x="110" y="176" width="26" height="9"/>`]],d:eye(112,58)},
+{n:"الخنزير",p:[["body","الجسم","pink",E(100,140,62,42)+"/>"],["head","الرأس","pink",`<circle cx="100" cy="75" r="35"/>`],["ears","الأذنان","pink",P("72,50 78,28 94,46")+"/>"+P("106,46 122,28 128,50")+"/>"],["hoof","الحوافر","brown",`<rect x="70" y="176" width="22" height="9"/><rect x="108" y="176" width="22" height="9"/>`]],d:eye(86,68)+eye(114,68)+`<ellipse cx="100" cy="88" rx="14" ry="10" fill="none" stroke="#333" stroke-width="3" pointer-events="none"/>`},
+{n:"الضفدع",p:[["body","الجسم","green",E(100,130,58,48)+"/>"],["belly","البطن","white",E(100,145,34,28)+"/>"],["eyes","العينان","green",`<circle cx="70" cy="68" r="16"/><circle cx="130" cy="68" r="16"/>`],["mouth","الفم","red",`<path d="M68 108 Q100 140 132 108 Q100 124 68 108Z"/>`]],d:eye(70,68)+eye(130,68)},
+{n:"السمكة",p:[["body","الجسم","blue",E(90,100,60,38)+"/>"],["tail","الذيل","orange",P("145,100 190,65 190,135")+"/>"],["fin","الزعنفة","yellow",P("70,66 100,40 115,68")+"/>"]],d:eye(58,92)},
+{n:"القطة",p:[["body","الجسم","orange",E(100,145,52,42)+"/>"],["head","الرأس","orange",`<circle cx="100" cy="78" r="36"/>`],["ears","الأذنان","orange",P("68,56 72,28 94,46")+"/>"+P("106,46 128,28 132,56")+"/>"],["belly","البطن","white",E(100,152,28,26)+"/>"],["nose","الأنف","pink",P("94,84 106,84 100,92")+"/>"]],d:eye(86,74)+eye(114,74)}
+];
+const $=document.getElementById("app");
+let name="",stage=0,fills={},sel="yellow",pts=[0,0,0,0,0],db=null,uid=null,all=[];
+const svg=(c,f,real)=>`<svg viewBox="0 0 200 200">`+c.p.map(([id,,t,s])=>{
+ const fill=real?COL[t][0]:(f&&f[id]?COL[f[id]][0]:"#e9e9e9");
+ const tag=s.replace(/<(ellipse|circle|polygon|rect|path)/g,`<$1 fill="${fill}"`);
+ return `<g class="r" data-id="${id}">${tag}</g>`}).join("")+c.d+`</svg>`;
+const total=()=>pts.reduce((a,b)=>a+b,0);
+function home(){$.innerHTML=`<h1>🎨 لعبة التلوين</h1><div class="card"><p>٥ مراحل، كل مرحلة ٢٠ نقطة كحد أقصى: اللون الصحيح يعطي النقطة كاملة، واللون المشابه جزءاً كبيراً منها، واللون غير المشابه أو ترك الجزء بلا تلوين يعطي ٠.</p><input id="nm" maxlength="14" placeholder="اكتب اسمك"><br><button class="btn" id="go">ابدأ</button></div>${board()}`;
+ document.getElementById("go").onclick=()=>{name=document.getElementById("nm").value.trim()||"لاعب";stage=0;pts=[0,0,0,0,0];play()}}
+function play(){fills={};const c=CH[stage];
+ $.innerHTML=`<h1>المرحلة ${stage+1} / 5</h1><div class="card"><b>لوّن: ${c.n}</b><br>${svg(c,fills)}<div class="pal">${Object.entries(COL).map(([k,v])=>`<div class="sw${k==sel?" on":""}" data-k="${k}" title="${v[1]}" style="background:${v[0]}"></div>`).join("")}</div><button class="btn" id="ok">تأكيد التلوين</button></div>`;
+ const rep=()=>{$.querySelector("svg").outerHTML=svg(c,fills);bind()};
+ const bind=()=>$.querySelectorAll(".r").forEach(g=>g.onclick=()=>{fills[g.dataset.id]=sel;rep()});
+ $.querySelectorAll(".sw").forEach(s=>s.onclick=()=>{sel=s.dataset.k;$.querySelectorAll(".sw").forEach(x=>x.classList.toggle("on",x==s))});
+ bind();document.getElementById("ok").onclick=reveal}
+function reveal(){const c=CH[stage];const SIM={yellow:["orange"],orange:["yellow","red","brown"],red:["orange","pink"],pink:["red","purple"],blue:["purple"],purple:["blue","pink"],brown:["orange","black"],black:["brown"],green:[],white:[]};const bad=c.p.filter(([id,,t])=>fills[id]!==t);const ok=!bad.length;const sc=c.p.reduce((a,[id,,t])=>{const f=fills[id];return a+(!f?0:f===t?1:(SIM[t]||[]).includes(f)?0.6:0)},0);const got=Math.round(sc/c.p.length*20);pts[stage]=got;save();
+ $.innerHTML=`<h1>${ok?"🎉 ممتاز! +20 نقطة":got>0?"👍 جيد! +"+got+" نقطة":"😅 0 نقطة"}</h1><div class="card"><div class="two"><div><small>تلوينك</small>${svg(c,fills)}</div><div><small>الشخصية الحقيقية</small>${svg(c,null,true)}</div></div>${ok?"":`<p class="no">أخطأت في: ${bad.map(b=>b[1]).join("، ")}</p>`}<p>مجموعك: <b>${total()}</b> / 100</p><button class="btn" id="nx">${stage<4?"المرحلة التالية":"النتيجة النهائية"}</button></div>`;
+ document.getElementById("nx").onclick=()=>{if(stage<4){stage++;play()}else end()}}
+function end(){$.innerHTML=`<h1>🏆 انتهت اللعبة</h1><div class="card"><p>نقاطك: <b>${total()}</b> / 100</p><button class="btn" id="re">العب مرة أخرى</button></div>${board()}`;document.getElementById("re").onclick=home}
+function board(){const rows=[...all].sort((a,b)=>b.total-a.total);
+ return `<div class="card"><b>🏅 لوحة المتصدرين</b>${db?"":"<br><small>اللعب الجماعي غير متاح الآن (سجّل الدخول في claude.ai)</small>"}<table>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.name)}</td><td>${r.total}</td></tr>`).join("")||"<tr><td><small>لا أحد بعد</small></td></tr>"}</table></div>`}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function save(){if(!db||!uid)return;try{await db.collection("scores").doc(uid).set({name,pts,total:total()})}catch(e){console.error(e)}}
+home();
+(async()=>{try{db=await claude.use("db");const u=await claude.use("user");if(!db||!u)return;uid=await u.id();
+ db.collection("scores").onSnapshot(s=>{all=s.docs.map(d=>d.data());if(/لوحة/.test($.innerHTML)&&!$.querySelector("svg"))$.querySelector("h1")&&refreshBoard()},e=>console.error(e))}catch(e){console.error(e)}})();
+function refreshBoard(){const h=$.querySelectorAll(".card");const last=h[h.length-1];if(last&&/لوحة/.test(last.innerHTML))last.outerHTML=board()}
+</script>
+</body>
+</html>
