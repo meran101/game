@@ -66,7 +66,7 @@ function play(){fills={};const c=CH[stage];
 function reveal(){const c=CH[stage];const SIM={yellow:["orange"],orange:["yellow","red","brown"],red:["orange","pink"],pink:["red","purple"],blue:["purple"],purple:["blue","pink"],brown:["orange","black"],black:["brown"],green:[],white:[]};const bad=c.p.filter(([id,,t])=>fills[id]!==t);const ok=!bad.length;const sc=c.p.reduce((a,[id,,t])=>{const f=fills[id];if(!f)return a;const d=Math.abs(shade(f)-shade(t));if(base(f)===base(t))return a+[1,.85,.7][d];if((SIM[base(t)]||[]).includes(base(f)))return a+[.6,.5,.4][d];return a},0);const got=Math.round(sc/c.p.length*20);pts[stage]=got;save();
  $.innerHTML=`<h1>${ok?"🎉 ممتاز! +20 نقطة":got>0?"👍 جيد! +"+got+" نقطة":"😅 0 نقطة"}</h1><div class="card"><div class="two"><div><small>تلوينك</small>${svg(c,fills)}</div><div><small>الشخصية الحقيقية</small>${svg(c,null,true)}</div></div>${ok?"":`<p class="no">أخطأت في: ${bad.map(b=>b[1]).join("، ")}</p>`}<p>مجموعك: <b>${total()}</b> / 100</p><button class="btn" id="nx">${stage<4?"المرحلة التالية":"النتيجة النهائية"}</button></div>`;
  document.getElementById("nx").onclick=()=>{if(stage<4){stage++;play()}else end()}}
-function end(){$.innerHTML=`<h1>🏆 انتهت اللعبة</h1><div class="card"><p>نقاطك: <b>${total()}</b> / 100</p><button class="btn" id="re">العب مرة أخرى</button></div>${board()}`;document.getElementById("re").onclick=home}
+function end(){$.innerHTML=`<h1>🏆 انتهت اللعبة</h1><div class="card"><p>نقاطك: <b>${total()}</b> / 100</p><button class="btn" id="re">العب مرة أخرى</button></div>${board()}`;document.getElementById("re").onclick=async()=>{await leave();home()}}
 function board(){const rows=[...all].sort((a,b)=>b.total-a.total);
  return `<div class="card"><b>🏅 لوحة المتصدرين</b>${room?"<br><small>الغرفة: "+esc(room)+"</small>":""}<table>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.name)}</td><td>${r.total}</td></tr>`).join("")||"<tr><td><small>لا أحد بعد</small></td></tr>"}</table></div>`}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -76,6 +76,8 @@ let uid=(()=>{try{let u=localStorage.getItem("uid");if(!u){u=Math.random().toStr
 const url=p=>DBURL.replace(/\/$/,"")+"/rooms/"+room+"/"+p+".json";
 const live=()=>DBURL.startsWith("http");
 async function save(){if(!live()||!room)return;try{await fetch(url("players/"+uid),{method:"PUT",body:JSON.stringify({name,pts,total:total()})})}catch(e){console.error(e)}}
+async function leave(){if(!live()||!room)return;try{await fetch(url("players/"+uid),{method:"DELETE",keepalive:true})}catch(e){}}
+window.addEventListener("pagehide",()=>{if(!live()||!room)return;try{fetch(url("players/"+uid),{method:"DELETE",keepalive:true})}catch(e){}});
 let timer=null;
 function startPoll(){if(!live()||timer)return;const t=async()=>{try{const r=await fetch(url("players"));const d=await r.json();all=d?Object.values(d):[];refreshBoard()}catch(e){}};t();timer=setInterval(t,3000)}
 function refreshBoard(){const h=$.querySelectorAll(".card");const last=h[h.length-1];if(last&&/لوحة/.test(last.innerHTML))last.outerHTML=board()}
