@@ -49,7 +49,10 @@ const lab=([r,g,b])=>{const l=c=>{c/=255;return c<=.04045?c/12.92:((c+.055)/1.05
 const score=(t,g)=>{const a=lab(rgb(t.h,t.s,t.b)),b=lab(rgb(g.h,g.s,g.b));return Math.round(10*Math.exp(-Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2])/25)*100)/100};
 const hash=s=>{let h=1779033703;for(const ch of s)h=Math.imul(h^ch.charCodeAt(0),3432918353),h=h<<13|h>>>19;return h>>>0};
 const rng=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
-const makeTargets=r=>Array.from({length:5},()=>({h:Math.floor(r()*360),s:25+Math.floor(r()*76),b:25+Math.floor(r()*76),ch:Math.floor(r()*500)}));
+/* شخصيات محذوفة (الخنزير): جسم مدوّر + فم بيضاوي (خطم) + بدون زوائد أو بأذنين مدببتين */
+const banned=id=>[0,1,5].includes(id%10)&&[0,2].includes(Math.floor(id/10)%10)&&(id*7)%3===1;
+const pickCh=r=>{let c;do c=Math.floor(r()*500);while(banned(c));return c};
+const makeTargets=r=>Array.from({length:5},()=>({h:Math.floor(r()*360),s:25+Math.floor(r()*76),b:25+Math.floor(r()*76),ch:pickCh(r)}));
 /* ===== ٥٠٠ شخصية (١٠ أجسام × ١٠ زوائد × ٥ وجوه) ===== */
 const BODY=[`<ellipse cx="100" cy="125" rx="58" ry="50"/>`,`<circle cx="100" cy="125" r="52"/>`,`<rect x="45" y="80" width="110" height="95" rx="30"/>`,`<polygon points="100,68 160,175 40,175"/>`,`<path d="M100 72C140 72 150 110 160 150C165 180 35 180 40 150C50 110 60 72 100 72Z"/>`,`<rect x="50" y="75" width="100" height="100" rx="50"/>`,`<polygon points="100,68 160,125 100,182 40,125"/>`,`<polygon points="70,72 130,72 165,125 130,178 70,178 35,125"/>`,`<path d="M100 68C150 68 160 130 150 160C140 185 60 185 50 160C40 130 50 68 100 68Z"/>`,`<polygon points="62,75 138,75 165,175 35,175"/>`];
 const TOP=[``,`<circle cx="62" cy="76" r="18"/><circle cx="138" cy="76" r="18"/>`,`<polygon points="48,86 56,40 84,72"/><polygon points="116,72 144,40 152,86"/>`,`<path d="M68 76C50 60 50 40 62 30C62 48 78 56 82 70Z"/><path d="M132 76C150 60 150 40 138 30C138 48 122 56 118 70Z"/>`,`<path d="M100 72V38" fill="none" stroke-width="5"/><circle cx="100" cy="32" r="10"/>`,`<polygon points="100,20 118,76 82,76"/>`,`<path d="M100 72C100 50 96 40 84 34C84 48 90 58 100 72Z"/><path d="M100 72C100 50 106 40 120 34C120 48 112 58 100 72Z"/>`,`<polygon points="68,76 72,44 88,62 100,38 112,62 128,44 132,76"/>`,`<ellipse cx="78" cy="48" rx="12" ry="34"/><ellipse cx="122" cy="48" rx="12" ry="34"/>`,`<polygon points="76,76 82,42 92,66 100,36 108,66 118,42 124,76"/>`];
@@ -79,7 +82,7 @@ function home(){setTimeout(bindHome,0);
  <div class="card"><input type="text" id="nm" maxlength="14" placeholder="اكتب اسمك" value="${esc(name)}"></div>
  <div class="card"><b>منفرد</b><br><small>٥ جولات، ١٠ نقاط لكل جولة</small><div class="row"><button class="btn" id="se">سهل (٥ ثوانٍ)</button><button class="btn" id="sh">صعب (ثانيتان)</button></div></div>
  <div class="card"><b>التحدي اليومي</b><br><small>الجميع يرى نفس الألوان اليوم</small><button class="btn" id="dy">ابدأ التحدي</button></div>
- <div class="card"><b>لعب جماعي</b><br><small>أنشئ لعبة وأرسل الرابط، أو أدخل رمز غرفة صديقك</small><input type="text" id="rm" maxlength="12" placeholder="رمز الغرفة" value="${esc(hashRoom)}"><div class="row"><button class="btn" id="mk">إنشاء لعبة</button><button class="btn alt" id="jn">انضمام</button></div></div>${setup()}${board()}`}
+ <div class="card"><b>لعب جماعي</b><br><small>أنشئ لعبة وأرسل الرابط، أو أدخل رمز غرفة صديقك</small><input type="text" id="rm" maxlength="12" placeholder="رمز الغرفة" value="${esc(hashRoom)}"><div class="row"><button class="btn" id="mk">إنشاء لعبة</button><button class="btn alt" id="jn">انضمام</button></div></div>${setup()}`}
 function bindHome(){const nm=()=>{name=document.getElementById("nm").value.trim()||"لاعب";ls("name",name)};
  const q=id=>document.getElementById(id);
  q("se").onclick=()=>{nm();start("solo",5,"")};
@@ -88,7 +91,7 @@ function bindHome(){const nm=()=>{name=document.getElementById("nm").value.trim(
  q("mk").onclick=()=>{nm();const c=Math.random().toString(36).slice(2,7);start("multi",5,c)};
  q("jn").onclick=()=>{nm();const c=q("rm").value.replace(/[^A-Za-z0-9_-]/g,"");if(!c)return alert("اكتب رمز الغرفة");start("multi",5,c)};
  bindSetup()}
-function start(m,t,r){mode=m;memT=t;room=r;targets=makeTargets(r?rng(hash(r)):Math.random);round=0;pts=[0,0,0,0,0];all=[];if(room)startPoll();memorize()}
+function start(m,t,r){wipe();clearInterval(timer);mode=m;memT=t;room=r;targets=makeTargets(r?rng(hash(r)):Math.random);round=0;pts=[0,0,0,0,0];all=[];if(room)startPoll();memorize()}
 /* ===== الجولات ===== */
 function memorize(){let t=memT;const c=targets[round];
  $.innerHTML=`<h1>الجولة ${round+1} / 5</h1><p class="sub">${modeName()}</p><div class="card"><b>احفظ هذا اللون!</b><div class="sw" id="sw" style="--c:${css(c)}">${charSvg(c.ch)}<span class="cd" id="cd">${t}</span></div><div class="bar"><i id="pb"></i></div></div>`;
@@ -111,11 +114,11 @@ function reveal(){const c=targets[round],sc=score(c,g);pts[round]=sc;save();
  const em=sc>=8?"🎉 ممتاز!":sc>=5?"👍 جيد!":"😅 حاول مجدداً";
  $.innerHTML=`<h1>${em} ${sc.toFixed(2)} / 10</h1><div class="card"><div class="two"><div><small>لونك</small><div class="sw" style="--c:${css(g)}">${charSvg(c.ch)}</div></div><div><small>اللون الصحيح</small><div class="sw" style="--c:${css(c)}">${charSvg(c.ch)}</div></div></div><p><small>الصحيح: ${c.h}° · ${c.s}% · ${c.b}%<br>لونك: ${Math.round(g.h)}° · ${Math.round(g.s)}% · ${Math.round(g.b)}%</small></p><p>مجموعك: <b>${total().toFixed(2)}</b> / 50</p><button class="btn" id="nx">${round<4?"الجولة التالية":"النتيجة النهائية"}</button></div>`;
  document.getElementById("nx").onclick=()=>{if(round<4){round++;memorize()}else end()}}
-function end(){if(mode==="daily")ls("daily",today());
+function end(){if(mode==="daily")ls("daily",today());if(!room||!live())all=[{name,total:total()}];
  $.innerHTML=`<h1>🏆 انتهت اللعبة</h1><p class="sub">${modeName()}</p><div class="card"><p style="font-size:34px;margin:4px"><b>${total().toFixed(2)}</b> / 50</p><div class="chips">${targets.map(c=>`<i style="--c:${css(c)}">${charSvg(c.ch)}</i>`).join("")}</div><button class="btn" id="sh">مشاركة النتيجة</button>${room&&mode==="multi"&&live()?`<button class="btn alt" id="inv">🔗 دعوة صديق لنفس الألوان</button>`:""}<button class="btn alt" id="re">القائمة الرئيسية</button></div>${board()}`;
  document.getElementById("sh").onclick=()=>{const t=`حصلت على ${total().toFixed(2)} / 50 في لعبة ذاكرة الألوان! هل تتفوق عليّ؟\n`+location.href.split("#")[0];navigator.share?navigator.share({text:t}).catch(()=>{}):copy(t)};
  const i=document.getElementById("inv");if(i)i.onclick=()=>copy(location.href.split("#")[0]+"#db="+encodeURIComponent(DBURL)+"&room="+room);
- document.getElementById("re").onclick=async()=>{await leave(mode==="daily"?false:true);hashRoom="";home()}}
+ document.getElementById("re").onclick=()=>{clearInterval(timer);wipe();room="";all=[];hashRoom="";home()}}
 const copy=t=>(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert("تم النسخ!"),()=>prompt("انسخ:",t));
 function board(){const rows=[...all].sort((a,b)=>b.total-a.total).slice(0,30);
  return `<div class="card"><b>🏅 لوحة المتصدرين</b>${room?"<br><small>"+(mode==="daily"?"اليومي":"الغرفة: "+esc(room))+"</small>":""}<table>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.name)}</td><td>${Number(r.total).toFixed(2)}</td></tr>`).join("")||"<tr><td><small>لا أحد بعد</small></td></tr>"}</table></div>`}
@@ -126,8 +129,8 @@ let uid=ls("uid")||(()=>{const u=Math.random().toString(36).slice(2,10);ls("uid"
 const url=p=>DBURL.replace(/\/$/,"")+"/rooms/"+room+"/"+p+".json";
 const live=()=>DBURL.startsWith("http");
 async function save(){if(!live()||!room)return;try{await fetch(url("players/"+uid),{method:"PUT",body:JSON.stringify({name,pts,total:total()})})}catch(e){console.error(e)}}
-async function leave(del){if(!live()||!room||!del)return;try{await fetch(url("players/"+uid),{method:"DELETE",keepalive:true})}catch(e){}}
-window.addEventListener("pagehide",()=>{if(!live()||!room||mode==="daily")return;try{fetch(url("players/"+uid),{method:"DELETE",keepalive:true})}catch(e){}});
+function wipe(){if(!live()||!room)return;try{fetch(url("players/"+uid),{method:"DELETE",keepalive:true})}catch(e){}}
+window.addEventListener("pagehide",wipe);
 let timer=null;
 function startPoll(){if(!live())return;clearInterval(timer);const t=async()=>{try{const r=await fetch(url("players"));const d=await r.json();all=d?Object.values(d):[];refreshBoard()}catch(e){}};t();timer=setInterval(t,3000)}
 function refreshBoard(){const h=$.querySelectorAll(".card");const last=h[h.length-1];if(last&&/لوحة/.test(last.innerHTML))last.outerHTML=board()}
@@ -135,7 +138,6 @@ function setup(){return live()?`<button class="btn alt" id="inv">🔗 نسخ ر�
 function bindSetup(){const i=document.getElementById("inv"),v=document.getElementById("sv");
  if(i)i.onclick=()=>copy(location.href.split("#")[0]+"#db="+encodeURIComponent(DBURL));
  if(v)v.onclick=()=>{const x=document.getElementById("fb").value.trim();if(!/^https:\/\//.test(x))return alert("الرابط غير صحيح");DBURL=x;ls("dburl",x);home()}}
-if(live()&&!hashRoom){room="daily-"+today();mode="daily";startPoll()}
 home();
 </script>
 </body>
